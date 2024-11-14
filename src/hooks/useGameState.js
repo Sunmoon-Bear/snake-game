@@ -33,11 +33,25 @@ export function useGameState() {
     const [isPaused, setIsPaused] = useState(false);
     const [difficulty, setDifficulty] = useState('NORMAL');
     const [currentTheme, setCurrentTheme] = useState('classic');
-    const [highScores, setHighScores] = useState({
-        EASY: 0,
-        NORMAL: 0,
-        HARD: 0
+    const [highScores, setHighScores] = useState(() => {
+        const savedScores = localStorage.getItem('highScores');
+        return savedScores ? JSON.parse(savedScores) : {
+            EASY: 0,
+            NORMAL: 0,
+            HARD: 0
+        };
     });
+
+    useEffect(() => {
+        if (score > highScores[difficulty]) {
+            const newHighScores = {
+                ...highScores,
+                [difficulty]: score
+            };
+            setHighScores(newHighScores);
+            localStorage.setItem('highScores', JSON.stringify(newHighScores));
+        }
+    }, [score, difficulty, highScores]);
 
     // 使用 useCallback 定义 resetGame 函数
     const resetGame = useCallback((newDifficulty = difficulty) => {
@@ -164,6 +178,7 @@ export function useGameState() {
         gameOver,
         isPaused,
         direction,
+        setDirection,
         difficulty,
         currentTheme,
         theme,

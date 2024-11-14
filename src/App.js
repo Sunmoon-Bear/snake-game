@@ -1,5 +1,6 @@
 import React from 'react';
 import './App.css';
+import './styles/mobile.css';
 import GameBoard from './components/GameBoard';
 
 function App() {

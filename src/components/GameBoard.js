@@ -7,6 +7,7 @@ import AchievementNotification from './AchievementNotification';
 import { achievementManager } from '../achievements/AchievementManager';
 import { StorageManager } from '../utils/StorageManager';
 import { themes } from '../themes/themes';
+import TouchControls from './TouchControls';
 
 // 添加常量定义
 const GRID_SIZE = 20;
@@ -25,6 +26,7 @@ function GameBoard() {
     gameOver,
     isPaused,
     direction,
+    setDirection,
     difficulty,
     currentTheme,
     theme,
@@ -88,26 +90,155 @@ function GameBoard() {
     ctx.fillStyle = theme.background;
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-    // 绘制蛇
-    ctx.fillStyle = theme.snake;
-    snake.forEach(([x, y]) => {
-      ctx.fillRect(
-        x * GRID_SIZE,
-        y * GRID_SIZE,
-        GRID_SIZE - 1,
-        GRID_SIZE - 1
-      );
-    });
+    // 根据主题绘制
+    switch (currentTheme) {
+      case 'neon':
+        // 绘制网格
+        ctx.strokeStyle = theme.gridLines.color;
+        ctx.shadowColor = theme.gridLines.glow;
+        ctx.shadowBlur = 5;
+        ctx.lineWidth = 0.5;
+        
+        // 绘制蛇
+        ctx.shadowColor = theme.snake.glow;
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = theme.snake.color;
+        snake.forEach(([x, y]) => {
+          ctx.fillRect(
+            x * GRID_SIZE,
+            y * GRID_SIZE,
+            GRID_SIZE - 1,
+            GRID_SIZE - 1
+          );
+        });
 
-    // 绘制食物
-    ctx.fillStyle = theme.food;
-    ctx.fillRect(
-      food.x * GRID_SIZE,
-      food.y * GRID_SIZE,
-      GRID_SIZE - 1,
-      GRID_SIZE - 1
-    );
-  }, [snake, food, theme, CANVAS_SIZE, GRID_SIZE]);
+        // 绘制食物
+        ctx.shadowColor = theme.food.glow;
+        ctx.fillStyle = theme.food.color;
+        ctx.fillRect(
+          food.x * GRID_SIZE,
+          food.y * GRID_SIZE,
+          GRID_SIZE - 1,
+          GRID_SIZE - 1
+        );
+        break;
+
+      case 'pixel':
+        // 绘制网格
+        if (theme.gridLines) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.lineWidth = 1;
+          for (let i = 0; i <= CANVAS_SIZE; i += GRID_SIZE) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, CANVAS_SIZE);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(CANVAS_SIZE, i);
+            ctx.stroke();
+          }
+        }
+
+        // 绘制蛇
+        snake.forEach(([x, y], index) => {
+          ctx.fillStyle = index === 0 ? theme.snake.head : 
+                         index === snake.length - 1 ? theme.snake.tail : 
+                         theme.snake.body;
+          ctx.fillRect(
+            x * GRID_SIZE,
+            y * GRID_SIZE,
+            GRID_SIZE - 1,
+            GRID_SIZE - 1
+          );
+        });
+
+        // 绘制食物
+        ctx.fillStyle = theme.food;
+        ctx.fillRect(
+          food.x * GRID_SIZE,
+          food.y * GRID_SIZE,
+          GRID_SIZE - 1,
+          GRID_SIZE - 1
+        );
+        break;
+
+      default: // 经典主题
+        ctx.fillStyle = theme.snake;
+        snake.forEach(([x, y]) => {
+          ctx.fillRect(
+            x * GRID_SIZE,
+            y * GRID_SIZE,
+            GRID_SIZE - 1,
+            GRID_SIZE - 1
+          );
+        });
+
+        ctx.fillStyle = theme.food;
+        ctx.fillRect(
+          food.x * GRID_SIZE,
+          food.y * GRID_SIZE,
+          GRID_SIZE - 1,
+          GRID_SIZE - 1
+        );
+    }
+  }, [snake, food, theme, currentTheme, CANVAS_SIZE, GRID_SIZE]);
+
+  // 在 useEffect 部分添加触摸事件处理
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let lastDirection = '';
+    let lastDirectionTime = 0;
+
+    const handleTouchStart = (e) => {
+      e.preventDefault();
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      if (!touchStartX || !touchStartY) return;
+
+      const now = Date.now();
+      if (now - lastDirectionTime < 100) return;
+
+      const touchEndX = e.touches[0].clientX;
+      const touchEndY = e.touches[0].clientY;
+
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+
+      const minSwipeDistance = 30;
+
+      let newDirection = '';
+
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+        newDirection = deltaX > 0 ? 'RIGHT' : 'LEFT';
+      } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
+        newDirection = deltaY > 0 ? 'DOWN' : 'UP';
+      }
+
+      if (newDirection && newDirection !== lastDirection) {
+        setDirection(newDirection);
+        lastDirection = newDirection;
+        lastDirectionTime = now;
+      }
+
+      touchStartX = touchEndX;
+      touchStartY = touchEndY;
+    };
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [direction, setDirection]);
 
   return (
     <div className="game-container">
@@ -137,23 +268,23 @@ function GameBoard() {
             </select>
           </div>
         </div>
-      </div>
 
-      <div className="game-info">
         <div className="score-section">
           <div className="score-display">
             <div className="score-label">当前得分</div>
-            <div className="score-value">{score}</div>
+            <div className="score-value current">{score}</div>
+          </div>
+          <div className="score-display controls-info">
+            <div className="score-label">操作提示</div>
+            <div className="controls-help">
+              <p>↑↓←→ 或 WASD：控制方向</p>
+              <p>空格键：暂停/继续</p>
+            </div>
           </div>
           <div className="score-display">
-            <div className="score-label">最高得分</div>
-            <div className="score-value highlight">{highScores[difficulty]}</div>
+            <div className="score-label">最高记录</div>
+            <div className="score-value high">{highScores[difficulty]}</div>
           </div>
-        </div>
-        
-        <div className="controls-help">
-          <p>↑↓←→ 或 WASD：控制方向</p>
-          <p>空格键：暂停/继续</p>
         </div>
       </div>
 
@@ -190,6 +321,10 @@ function GameBoard() {
               <p className="hint">按空格键重新开始</p>
             </div>
           </div>
+        )}
+        
+        {window.innerWidth <= 768 && (
+          <TouchControls onDirectionChange={setDirection} />
         )}
       </div>
     </div>

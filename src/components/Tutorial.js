@@ -23,6 +23,11 @@ function Tutorial({ onComplete }) {
       title: "游戏规则",
       content: "撞到墙壁或自己的身体会导致游戏结束",
       icon: "⚠️"
+    },
+    {
+      title: "移动端控制",
+      content: "在手机上可以使用屏幕下方的虚拟按键或滑动屏幕来控制方向",
+      icon: "📱"
     }
   ];
 
