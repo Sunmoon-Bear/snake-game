@@ -1,0 +1,28 @@
+@keyframes snakeMove {
+  0% { transform: scale(0.9); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes foodAppear {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes gameOverOverlay {
+  from { opacity: 0; }
+  to { opacity: 0.75; }
+}
+
+.snake-segment {
+  animation: snakeMove 0.3s ease-out;
+}
+
+.food {
+  animation: foodAppear 0.5s ease-out;
+}
+
+.game-over-overlay {
+  animation: gameOverOverlay 0.5s ease-out forwards;
+} 
